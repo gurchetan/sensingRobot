@@ -38,14 +38,37 @@ int tinyTimer = 10;
 int smallTimer = 300;
 int mediumTimer = 450;
 int largeTimer = 900;
+int randomCoolDown = 0;
 
-
-int soundStatus = 0;
-int colorInt = 17;
 
 int left = 15;
 int right = 15;
+/*
+	status:
+	Wandering:0
+	trailFollowing: 1
+	objectDetetection: 2
+*/
+int status = 2;
 
+
+void playSound() {
+	playTone(400, 20);
+	sleep(500);
+}
+
+void turnLeft(int theTime){
+		setMotorSpeed(motorLeft, 0);
+		setMotorSpeed(motorRight, turningSpeed);
+		sleep(theTime);
+
+}
+
+void turnRight(int theTime){
+		setMotorSpeed(motorLeft, turningSpeed);
+		setMotorSpeed(motorRight, 0);
+		sleep(theTime);
+}
 
 void randomTurn(){
 	int temp = random(2);
@@ -56,11 +79,23 @@ void randomTurn(){
 	}
 }
 
+void move(int leftMotorSpeed, int rightmotorSpeed, int timeLast, int isRandom){
+		setMotorSpeed(motorLeft, leftMotorSpeed);
+		setMotorSpeed(motorRight, rightmotorSpeed);
+		sleep(timeLast);
+}
 
 // When Status = 0
 void wandering() {
-	displayCenteredBigTextLine(4, "Wandering");
-	setLEDColor(ledGreen);
+
+	//// Read the sonar sensor
+	//currentDistance = SensorValue[sonarSensor];
+
+	//if ((distanceToMaintain - currentDistance) < -2)
+	//{
+	//	status = 2;
+	//}
+
 	counter++;
 	// If the counter is less than latency
 	// it is time to update the speed of each motor
@@ -102,9 +137,18 @@ void wandering() {
 
 // When Status = 1
 void trailFollowing() {
-
-
-
+	displayCenteredBigTextLine(4, "L: %d R: %d ", currentColourLeft, currentColourRight);
+	
+	if(currentColourLeft > currentColourRight ){
+		setMotorSpeed(motorLeft, robotSpeed + 20);
+		setMotorSpeed(motorRight, robotSpeed);
+		displayCenteredBigTextLine(7, "turn right ");
+	} else {
+		setMotorSpeed(motorLeft, robotSpeed );
+		setMotorSpeed(motorRight, robotSpeed+ 20);
+		displayCenteredBigTextLine(7, "turn left ");
+	}
+	
 } // trailFollowing() ends
 
 // When Status = 2
@@ -151,55 +195,26 @@ void objectDetection() {
 task main()
 {
 	writeDebugStreamLine("Here we go XXXXXXXXXXXXXXXXXXX");
-	int sensorDiff = 0;
-
+	int sensorDifference = 0;
 	while (true)
 	{
 		currentColourLeft = SensorValue[ColourLeft];
 		currentColourRight = SensorValue[ColourRight];
 
-		// if both sensors detect white and soundstatus is 0
-		if(SensorValue[ColourLeft] < colorInt && SensorValue[ColourRight] < colorInt) {
-			soundStatus = 1;
-
+		// if(status == 0)
+		// {
+			// displayCenteredBigTextLine(4, "Wandering");
+			// wandering();
+		// }
+		if(currentColourLeft < 20 || currentColourRight < 20)
+		{
+			trailFollowing();
+		
 		}
-
-		if(SensorValue[ColourLeft] < colorInt || SensorValue[ColourRight] < colorInt) {
-
-			//trailFollowing();
-
-
-			displayCenteredBigTextLine(4, "L: %d R: %d ", SensorValue[ColourLeft], SensorValue[ColourRight]);
-			if(SensorValue[ColourLeft] > SensorValue[ColourRight] ){
-				sensorDiff= (SensorValue[ColourRight]-SensorValue[ColourLeft]) % robotSpeed;
-				displayCenteredBigTextLine(4, "diff1; %d", sensorDiff);
-
-				setMotorSpeed(motorLeft, robotSpeed-sensorDiff);
-				setMotorSpeed(motorRight, robotSpeed + sensorDiff);
-				displayCenteredBigTextLine(7, "turn left ");
-			} else {
-
-				sensorDiff = (SensorValue[ColourLeft]-SensorValue[ColourRight]) % robotSpeed;
-				displayCenteredBigTextLine(4, "diff2; %d", sensorDiff);
-				setMotorSpeed(motorLeft, robotSpeed + sensorDiff);
-				setMotorSpeed(motorRight, robotSpeed-sensorDiff);
-				displayCenteredBigTextLine(7, "turn right ");
-				}
-		}
-		else {
-			if (soundStatus == 1 && SensorValue[ColourLeft] > 30 && SensorValue[ColourRight] > 30) {
-				playTone(100, 100);
-				setLEDColor(ledOrangeFlash);
-				soundStatus = 0;
-
-			}
-
-			wandering();
-		}
-
-
-
-		// objectDetection();
+		// if (status == 2)
+		// {
+			// objectDetection();
+		// }
 
 	} // While ends
 
